@@ -243,4 +243,3 @@ else:
     st.caption('La empresa con mayor cambio proyectado merece revisión; esa posición no equivale a una recomendación automática de compra. El error mostrado evalúa un horizonte de 12 meses, que puede diferir del horizonte seleccionado.')
 
 st.divider()
-st.caption('Las series mensuales se descargaron directamente de Yahoo Finance. La fecha etiqueta el mes, no necesariamente el día del cierre. No se interpolan valores ni se eliminan movimientos extremos automáticamente.')
