@@ -83,46 +83,12 @@ except Exception as exc:
     st.stop()
 
 st.sidebar.title('Análisis bursátil')
-pagina = st.sidebar.radio('Contenido del entregable', ['Presentación del estudio', 'Registro de los datos', 'Exploración de precios', 'Descomposición temporal', 'Estimación y errores'])
+pagina = st.sidebar.radio('Contenido del entregable', ['Exploración de precios', 'Descomposición temporal', 'Estimación y errores', 'Vista de las tres empresas'])
 ticker = st.sidebar.selectbox('Acción', list(EMPRESAS), format_func=lambda t: f'{t} | {EMPRESAS[t]}')
 s = datos[ticker].copy()
 st.sidebar.caption(f'{inicio:%m/%Y} a {fin:%m/%Y} | {len(datos)} registros mensuales por empresa')
 
-if pagina == 'Presentación del estudio':
-    st.title('Análisis de precios históricos de BVN, SCCO y BAP mediante series temporales')
-    st.subheader('Planteamiento del problema')
-    st.write('Los precios de las acciones cambian a lo largo del tiempo. Estas variaciones dificultan reconocer su evolución y distinguir movimientos de largo plazo de fluctuaciones transitorias. Se estudiarán las acciones de Buenaventura, Southern Copper y Credicorp para describir sus patrones y comparar el ajuste de métodos de suavizamiento.')
-    st.write('¿Cómo evolucionaron los precios de cierre ajustados de las tres empresas y qué método presenta menor error de ajuste en el periodo analizado?')
-    st.subheader('Justificación')
-    st.write('El análisis permite aplicar herramientas de series temporales a información bursátil: identificar tendencias, examinar posibles patrones estacionales y comparar métodos con criterios comunes. En términos prácticos, organiza la información histórica para comprender los movimientos de precios de empresas de los sectores minero y financiero.')
-    st.subheader('Objetivo del primer entregable')
-    st.write('Verificar la consistencia de los datos, explorar las series y aplicar descomposición clásica, promedios móviles y suavizamiento exponencial. La comparación se limita a los errores de entrenamiento.')
-
-elif pagina == 'Registro de los datos':
-    st.title('Características y revisión de la base')
-    ficha = pd.DataFrame([
-        ('Fuente', 'Yahoo Finance; extracción mediante yfinance'),
-        ('Empresas', 'BVN: Buenaventura; SCCO: Southern Copper; BAP: Credicorp'),
-        ('Variable', 'Cierre ajustado (Adj Close)'),
-        ('Unidad', 'Dólares estadounidenses por acción'),
-        ('Frecuencia disponible', 'Diaria y mensual, descargadas por separado'),
-        ('Periodo mensual común', f'{inicio:%m/%Y} a {fin:%m/%Y}'),
-        ('Observaciones mensuales', f'{len(datos)} por empresa'),
-        ('Uso de las frecuencias', 'Diaria y mensual: exploración. Mensual: descomposición y ajuste'),
-        ('Faltantes', 'Sin faltantes en el periodo mensual común verificado; no se interpolan'),
-        ('Duplicados', 'Se comprueba que no existan fechas duplicadas al cargar cada archivo'),
-        ('Valores atípicos', 'Se examinan gráficamente y no se eliminan automáticamente')
-    ],columns=['Característica','Descripción'])
-    st.dataframe(ficha, hide_index=True, width='stretch')
-    st.caption('Los CSV mensuales de BVN y BAP comienzan en julio de 1996; SCCO incluye junio. Se utiliza julio como inicio común. Las fechas mensuales identifican el mes, no el día efectivo de cierre.')
-    filas=[]
-    for t in EMPRESAS:
-        for f,x in [('Diaria',diarios[t]),('Mensual común',datos[t])]:
-            filas.append({'Empresa':t,'Frecuencia':f,'Inicio':x.index.min().date(),'Fin':x.index.max().date(),'Registros':len(x),'Faltantes':int(x.isna().sum()),'Duplicados':int(x.index.duplicated().sum())})
-    st.dataframe(pd.DataFrame(filas),hide_index=True,width='stretch')
-    st.caption('El cierre ajustado incorpora correcciones por dividendos y divisiones de acciones para facilitar comparaciones históricas.')
-
-elif pagina == 'Exploración de precios':
+if pagina == 'Exploración de precios':
     st.title('Comportamiento de las cotizaciones')
     frecuencia=st.radio('Frecuencia del gráfico',['Mensual','Diaria'],horizontal=True)
     base=datos if frecuencia=='Mensual' else pd.concat(diarios,axis=1)
@@ -165,7 +131,7 @@ elif pagina == 'Descomposición temporal':
     st.info('En la estructura aditiva, los componentes se expresan en dólares por acción. En la multiplicativa, estacionalidad y residuo son factores: 1 indica ausencia de efecto. La descomposición no demuestra por sí sola una estacionalidad estable.')
     st.download_button('Exportar componentes',componentes.to_csv().encode('utf-8-sig'),f'{ticker}_descomposicion.csv')
 
-else:
+elif pagina == 'Estimación y errores':
     st.title(f'Ajuste de métodos para {ticker}')
     ventana=st.slider('Ventana de promedios móviles (meses)',3,24,12)
     st.caption('Se utilizan todos los meses como entrenamiento. Los errores se comparan en los mismos registros, excluyendo los primeros 24 meses para reducir el efecto de inicialización.')
@@ -189,6 +155,45 @@ else:
         st.write('El promedio móvil simple asigna el mismo peso a los meses anteriores. El ponderado asigna pesos de 1 a la ventana, dando más importancia al mes más reciente. Ambos se desplazan un mes para evitar usar el precio que se intenta estimar. SES estima nivel; Holt incorpora tendencia; Holt-Winters incorpora tendencia y estacionalidad de 12 meses, aditiva o multiplicativa. Los parámetros exponenciales se optimizan por suma de errores cuadrados.')
     if fallos:st.warning('Métodos sin estimación: '+str(fallos))
     st.download_button('Exportar errores de entrenamiento',tabla.to_csv(index=False).encode('utf-8-sig'),f'{ticker}_errores_entrenamiento.csv')
+
+else:
+    st.title('BVN, SCCO y BAP en una misma vista')
+    analisis=st.selectbox('Análisis conjunto',['Serie histórica','Descomposición aditiva','Descomposición multiplicativa','Promedios móviles','Suavizamiento exponencial','Errores de entrenamiento'])
+    ventana=st.slider('Ventana común de promedios móviles (meses)',3,24,12)
+    if analisis=='Serie histórica':
+        escala=st.radio('Escala',['Precio ajustado','Base 100'],horizontal=True)
+        x=datos if escala=='Precio ajustado' else datos.div(datos.iloc[0]).mul(100)
+        st.plotly_chart(linea({t:x[t] for t in EMPRESAS},'Evolución de las tres empresas','US$ por acción' if escala=='Precio ajustado' else 'Índice base 100'),width='stretch')
+        st.caption('La base 100 facilita comparar variaciones porcentuales desde el mismo mes inicial.')
+    elif analisis.startswith('Descomposición'):
+        componente=st.selectbox('Componente a comparar',['Observado','Tendencia','Estacionalidad','Residuo'])
+        for col,t in zip(st.columns(3),EMPRESAS):
+            des=seasonal_decompose(datos[t],model='additive' if analisis.endswith('aditiva') else 'multiplicative',period=12)
+            componentes={'Observado':des.observed,'Tendencia':des.trend,'Estacionalidad':des.seasonal,'Residuo':des.resid}
+            with col:
+                st.subheader(t)
+                st.plotly_chart(linea({componente:componentes[componente]},componente,'Factor' if analisis.endswith('multiplicativa') and componente in ['Estacionalidad','Residuo'] else 'US$ por acción'),width='stretch')
+    else:
+        tablas=[]
+        for col,t in zip(st.columns(3),EMPRESAS):
+            x=datos[t];ajustes={};filas=[]
+            for m in METODOS:
+                try:
+                    f,_=ajustar(x,m,ventana);ajustes[m]=f
+                    filas.append({'Empresa':t,'Método':m,**errores(x.iloc[24:],f.iloc[24:])})
+                except Exception as exc:
+                    with col:st.caption(f'{m}: {exc}')
+            tabla=pd.DataFrame(filas);tablas.append(tabla)
+            with col:
+                st.subheader(t)
+                if analisis=='Errores de entrenamiento':
+                    st.dataframe(tabla.drop(columns='Empresa').sort_values('RMSE'),hide_index=True,width='stretch')
+                else:
+                    elegidos=['PMS','Ponderado'] if analisis=='Promedios móviles' else METODOS[2:]
+                    st.plotly_chart(linea({'Observado':x,**{m:ajustes[m] for m in elegidos if m in ajustes}},analisis),width='stretch')
+        total=pd.concat(tablas,ignore_index=True)
+        st.caption('Todos los errores se calculan sobre los mismos meses: desde el registro 25 hasta el último. RMSE y MAE se comparan entre métodos de una misma empresa; para contrastar empresas con precios distintos, observa también MAPE.')
+        st.download_button('Exportar resultados de las tres empresas',total.to_csv(index=False).encode('utf-8-sig'),'errores_tres_empresas.csv')
 
 st.divider()
 st.caption('Primer entregable | Fuente: Yahoo Finance | Variable: cierre ajustado | Datos históricos hasta septiembre de 2026')
