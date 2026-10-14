@@ -133,7 +133,7 @@ elif pagina == 'Descomposición temporal':
 elif pagina == 'Estimación y errores':
     st.title(f'Ajuste de métodos para {ticker}')
     ventana=st.slider('Ventana de promedios móviles (meses)',3,24,12)
-    st.caption('Se utilizan todos los meses como entrenamiento. Los errores se comparan en los mismos registros, excluyendo los primeros 24 meses para reducir el efecto de inicialización.')
+    st.caption('Se utilizan todos los meses como entrenamiento.')
     ajustes={};filas=[];fallos={};comienzo=max(24,ventana)
     with st.spinner('Estimando métodos...'):
         for m in METODOS:
