@@ -82,7 +82,7 @@ except Exception as exc:
     st.error(f'No se pudieron cargar los datos: {exc}')
     st.stop()
 
-st.sidebar.title('Análisis bursátil')
+st.sidebar.title('Análisis de precios de acciones')
 pagina = st.sidebar.radio('Contenido del entregable', ['Exploración de precios', 'Descomposición temporal', 'Estimación y errores', 'Vista de las tres empresas'])
 ticker = st.sidebar.selectbox('Acción', list(EMPRESAS), format_func=lambda t: f'{t} | {EMPRESAS[t]}')
 s = datos[ticker].copy()
