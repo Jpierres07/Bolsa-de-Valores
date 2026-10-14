@@ -8,7 +8,7 @@ import streamlit as st
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-st.set_page_config(page_title='Análisis de precios de acciones | Entregable 1', layout='wide')
+st.set_page_config(page_title='Análisis de precios de acciones', layout='wide')
 st.markdown("""<style>
 .stApp {background:#0b1925;color:#e5f2f4;}
 [data-testid="stSidebar"] {background:#102c3a;}
@@ -83,7 +83,7 @@ except Exception as exc:
     st.stop()
 
 st.sidebar.title('Análisis de precios de acciones')
-pagina = st.sidebar.radio('Contenido del entregable', ['Exploración de precios', 'Descomposición temporal', 'Estimación y errores', 'Vista de las tres empresas'])
+pagina = st.sidebar.radio('Contenido', ['Exploración de precios', 'Descomposición temporal', 'Estimación y errores', 'Vista de las tres empresas'])
 ticker = st.sidebar.selectbox('Acción', list(EMPRESAS), format_func=lambda t: f'{t} | {EMPRESAS[t]}')
 s = datos[ticker].copy()
 st.sidebar.caption(f'{inicio:%m/%Y} a {fin:%m/%Y} | {len(datos)} registros mensuales por empresa')
@@ -196,4 +196,4 @@ else:
         st.download_button('Exportar resultados de las tres empresas',total.to_csv(index=False).encode('utf-8-sig'),'errores_tres_empresas.csv')
 
 st.divider()
-st.caption('Primer entregable | Fuente: Yahoo Finance | Variable: cierre ajustado | Datos históricos hasta septiembre de 2026')
+st.caption('Fuente: Yahoo Finance | Variable: cierre ajustado | Datos históricos hasta septiembre de 2026')
