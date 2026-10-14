@@ -8,7 +8,7 @@ import streamlit as st
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-st.set_page_config(page_title='Análisis bursátil | Entregable 1', layout='wide')
+st.set_page_config(page_title='Análisis de precios de acciones | Entregable 1', layout='wide')
 st.markdown("""<style>
 .stApp {background:#0b1925;color:#e5f2f4;}
 [data-testid="stSidebar"] {background:#102c3a;}
