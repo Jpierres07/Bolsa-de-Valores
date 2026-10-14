@@ -8,7 +8,7 @@ import streamlit as st
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-st.set_page_config(page_title='Observatorio de acciones', page_icon='📈', layout='wide')
+st.set_page_config(page_title='Análisis bursátil | Entregable 1', layout='wide')
 st.markdown("""<style>
 .stApp {background:#0b1925;color:#e5f2f4;}
 [data-testid="stSidebar"] {background:#102c3a;}
@@ -57,56 +57,16 @@ def ajustar(s, metodo, ventana):
     return pd.Series(np.asarray(fit.fittedvalues), index=s.index), fit
 
 
-def futuro(s, metodo, h, ventana, fit=None):
-    if metodo in ['PMS', 'Ponderado']:
-        valores = list(s.values)
-        pred = []
-        pesos = np.arange(1, ventana+1)
-        for _ in range(h):
-            x = np.asarray(valores[-ventana:])
-            v = float(x.mean() if metodo == 'PMS' else np.dot(x, pesos)/pesos.sum())
-            valores.append(v)
-            pred.append(v)
-        pred = np.asarray(pred)
-    else:
-        if fit is None:
-            _, fit = ajustar(s, metodo, ventana)
-        pred = np.asarray(fit.forecast(h))
-    if not np.isfinite(pred).all() or (pred <= 0).any():
-        raise ValueError('El modelo produce precios futuros no válidos')
-    return pred
-
-
 def errores(real, pred):
     e = np.asarray(real)-np.asarray(pred)
     return {'MAE': float(np.mean(abs(e))), 'RMSE': float(np.sqrt(np.mean(e**2))), 'MAPE (%)': float(np.mean(abs(e/np.asarray(real)))*100)}
-
-@st.cache_data(show_spinner=False)
-def evaluar(s, ventana, h=12):
-    if len(s) < max(48, ventana+24):
-        raise ValueError('Selecciona al menos 48 meses para comparar los modelos.')
-    train, test = s.iloc[:-h], s.iloc[-h:]
-    tablas, pruebas, ajustes, fallos = [], {}, {}, {}
-    # Mismos meses de entrenamiento para todos; excluye inicialización estacional.
-    comienzo = max(24, ventana)
-    for metodo in METODOS:
-        try:
-            fitted, fit = ajustar(train, metodo, ventana)
-            pred = futuro(train, metodo, h, ventana, fit)
-            tablas.append({'Modelo': metodo, 'Fase': 'Entrenamiento', **errores(train.iloc[comienzo:], fitted.iloc[comienzo:])})
-            tablas.append({'Modelo': metodo, 'Fase': 'Validación (12 meses)', **errores(test, pred)})
-            pruebas[metodo] = pd.Series(pred, index=test.index)
-            ajustes[metodo] = fitted
-        except Exception as exc:
-            fallos[metodo] = str(exc)
-    return pd.DataFrame(tablas), pruebas, ajustes, fallos
 
 
 def linea(series, titulo, eje='US$ por acción (cierre ajustado)'):
     f = go.Figure()
     for nombre, s in series.items():
         f.add_trace(go.Scatter(x=s.index, y=s.values, name=nombre, mode='lines'))
-    f.update_layout(title=titulo, xaxis_title='Fecha', yaxis_title=eje, height=440, hovermode='x unified', template='plotly_dark', paper_bgcolor='#102633', plot_bgcolor='#102633')
+    f.update_layout(title=titulo, xaxis_title='Fecha', yaxis_title=eje, height=500, hovermode='x unified', dragmode='zoom', xaxis=dict(rangeslider=dict(visible=True), rangeselector=dict(buttons=[dict(count=1,label='1 año',step='year',stepmode='backward'),dict(count=5,label='5 años',step='year',stepmode='backward'),dict(label='Todo',step='all')])), template='plotly_dark', paper_bgcolor='#102633', plot_bgcolor='#102633')
     return f
 
 try:
@@ -122,124 +82,113 @@ except Exception as exc:
     st.error(f'No se pudieron cargar los datos: {exc}')
     st.stop()
 
-st.sidebar.title('📈 Observatorio de acciones')
-pagina = st.sidebar.radio('¿Qué quieres conocer?', ['🏠 Resumen', '📈 Historia de cada empresa', '🔮 Pronósticos', '⚖️ Riesgos y simulador', '🎯 Comparación para decidir', '🎓 Análisis académico'])
-ticker = st.sidebar.selectbox('Empresa', list(EMPRESAS), format_func=lambda t: f'{t} · {EMPRESAS[t]}')
-ventana = st.sidebar.slider('Ventana de promedios móviles (meses)', 3, 24, 12)
-st.sidebar.caption(f'Periodo mensual común: {inicio:%m/%Y}–{fin:%m/%Y} · {len(datos)} meses')
-st.sidebar.caption('Fuente: Yahoo Finance. Archivos descargados con yfinance; datos históricos.')
+st.sidebar.title('Análisis bursátil')
+pagina = st.sidebar.radio('Contenido del entregable', ['Presentación del estudio', 'Registro de los datos', 'Exploración de precios', 'Descomposición temporal', 'Estimación y errores'])
+ticker = st.sidebar.selectbox('Acción', list(EMPRESAS), format_func=lambda t: f'{t} | {EMPRESAS[t]}')
 s = datos[ticker].copy()
+st.sidebar.caption(f'{inicio:%m/%Y} a {fin:%m/%Y} | {len(datos)} registros mensuales por empresa')
 
-if pagina == '🏠 Resumen':
-    st.title('📈 Acciones: Buenaventura, Southern Copper y Credicorp')
-    st.write('Compara cómo evolucionaron los precios y sus fluctuaciones.')
-    for col, t in zip(st.columns(3), EMPRESAS):
-        x = datos[t]
-        col.metric(f'{t} · {EMPRESAS[t]}', f'US$ {x.iloc[-1]:,.2f}', f'{(x.iloc[-1]/x.iloc[-2]-1)*100:+.2f}% último mes')
-    n = st.radio('Periodo de comparación', [12, 60, len(datos)], format_func=lambda n: f'{n} meses', horizontal=True)
-    corte = datos.tail(n)
-    st.plotly_chart(linea({t: corte[t]/corte[t].iloc[0]*100 for t in EMPRESAS}, 'Evolución comparada: todos empiezan en 100', 'Índice base 100'), width='stretch')
-    st.caption('La base 100 compara cambios relativos; los precios nominales de las empresas son distintos.')
+if pagina == 'Presentación del estudio':
+    st.title('Análisis de precios históricos de BVN, SCCO y BAP mediante series temporales')
+    st.subheader('Planteamiento del problema')
+    st.write('Los precios de las acciones cambian a lo largo del tiempo. Estas variaciones dificultan reconocer su evolución y distinguir movimientos de largo plazo de fluctuaciones transitorias. Se estudiarán las acciones de Buenaventura, Southern Copper y Credicorp para describir sus patrones y comparar el ajuste de métodos de suavizamiento.')
+    st.write('¿Cómo evolucionaron los precios de cierre ajustados de las tres empresas y qué método presenta menor error de ajuste en el periodo analizado?')
+    st.subheader('Justificación')
+    st.write('El análisis permite aplicar herramientas de series temporales a información bursátil: identificar tendencias, examinar posibles patrones estacionales y comparar métodos con criterios comunes. En términos prácticos, organiza la información histórica para comprender los movimientos de precios de empresas de los sectores minero y financiero.')
+    st.subheader('Objetivo del primer entregable')
+    st.write('Verificar la consistencia de los datos, explorar las series y aplicar descomposición clásica, promedios móviles y suavizamiento exponencial. La comparación se limita a los errores de entrenamiento.')
 
-elif pagina == '📈 Historia de cada empresa':
-    st.title(f'📈 {EMPRESAS[ticker]} ({ticker})')
-    frecuencia = st.radio('Frecuencia', ['Mensual', 'Diaria'], horizontal=True)
-    x = s if frecuencia == 'Mensual' else diarios[ticker]
-    rango = st.date_input('Periodo del gráfico', value=(x.index.min().date(), x.index.max().date()), min_value=x.index.min().date(), max_value=x.index.max().date())
-    if len(rango) == 2:
-        x = x.loc[str(rango[0]):str(rango[1])]
-    if x.empty:
-        st.info('No hay registros en el periodo elegido.')
-        st.stop()
-    st.plotly_chart(linea({ticker: x}, 'Historia del cierre ajustado'), width='stretch')
-    st.subheader('Cambios por año: últimos cinco años completos y año actual')
-    anual = s.groupby(s.index.year).last()
-    cambio = anual.pct_change(fill_method=None).mul(100).tail(6)
-    labels = [f'{a} (hasta {s.index[-1]:%m})' if a == s.index[-1].year and s.index[-1].month < 12 else str(a) for a in cambio.index]
-    st.plotly_chart(px.bar(x=labels, y=cambio.values, labels={'x':'Año', 'y':'Cambio (%)'}), width='stretch')
-    st.caption('Cada año se compara con diciembre del año anterior. El último año puede ser incompleto.')
-    st.download_button('Descargar serie mostrada', x.rename('Adj Close').to_csv().encode('utf-8-sig'), f'{ticker}_{frecuencia}.csv')
+elif pagina == 'Registro de los datos':
+    st.title('Características y revisión de la base')
+    ficha = pd.DataFrame([
+        ('Fuente', 'Yahoo Finance; extracción mediante yfinance'),
+        ('Empresas', 'BVN: Buenaventura; SCCO: Southern Copper; BAP: Credicorp'),
+        ('Variable', 'Cierre ajustado (Adj Close)'),
+        ('Unidad', 'Dólares estadounidenses por acción'),
+        ('Frecuencia disponible', 'Diaria y mensual, descargadas por separado'),
+        ('Periodo mensual común', f'{inicio:%m/%Y} a {fin:%m/%Y}'),
+        ('Observaciones mensuales', f'{len(datos)} por empresa'),
+        ('Uso de las frecuencias', 'Diaria y mensual: exploración. Mensual: descomposición y ajuste'),
+        ('Faltantes', 'Sin faltantes en el periodo mensual común verificado; no se interpolan'),
+        ('Duplicados', 'Se comprueba que no existan fechas duplicadas al cargar cada archivo'),
+        ('Valores atípicos', 'Se examinan gráficamente y no se eliminan automáticamente')
+    ],columns=['Característica','Descripción'])
+    st.dataframe(ficha, hide_index=True, width='stretch')
+    st.caption('Los CSV mensuales de BVN y BAP comienzan en julio de 1996; SCCO incluye junio. Se utiliza julio como inicio común. Las fechas mensuales identifican el mes, no el día efectivo de cierre.')
+    filas=[]
+    for t in EMPRESAS:
+        for f,x in [('Diaria',diarios[t]),('Mensual común',datos[t])]:
+            filas.append({'Empresa':t,'Frecuencia':f,'Inicio':x.index.min().date(),'Fin':x.index.max().date(),'Registros':len(x),'Faltantes':int(x.isna().sum()),'Duplicados':int(x.index.duplicated().sum())})
+    st.dataframe(pd.DataFrame(filas),hide_index=True,width='stretch')
+    st.caption('El cierre ajustado incorpora correcciones por dividendos y divisiones de acciones para facilitar comparaciones históricas.')
 
-elif pagina in ['🔮 Pronósticos', '🎓 Análisis académico']:
-    st.title(f'{pagina} · {ticker}')
-    with st.spinner('Comparando métodos...'):
-        tabla, pruebas, ajustes, fallos = evaluar(s, ventana)
-    if tabla.empty:
-        st.error('Ningún modelo pudo estimarse.')
-        st.stop()
-    validacion = tabla[tabla['Fase'] == 'Validación (12 meses)'].sort_values('RMSE')
-    mejor = validacion.iloc[0]['Modelo']
-    if pagina == '🔮 Pronósticos':
-        st.info(f'Menor RMSE en los últimos 12 meses reservados para validación: {mejor}.')
-        metodo = st.selectbox('Método', list(validacion['Modelo']))
-        h = st.slider('Meses a pronosticar', 1, 24, 12)
-        try:
-            pred = futuro(s, metodo, h, ventana)
-        except Exception as exc:
-            st.error(str(exc)); st.stop()
-        fechas = pd.date_range(s.index[-1]+pd.offsets.MonthBegin(), periods=h, freq='MS')
-        proy = pd.Series(pred, index=fechas)
-        st.plotly_chart(linea({'Histórico': s.tail(60), 'Pronóstico': pd.concat([s.tail(1), proy])}, 'Histórico y escenario futuro'), width='stretch')
-        st.metric(f'Precio ajustado estimado en {fechas[-1]:%m/%Y}', f'US$ {pred[-1]:,.2f}', f'{(pred[-1]/s.iloc[-1]-1)*100:+.2f}%')
-        st.dataframe(validacion, hide_index=True)
-        st.caption('Validación: se reservan 12 meses y se pronostican desde un único origen, sin usar sus precios para ajustar. Después se reajusta el modelo con todo el historial. No se muestran intervalos de incertidumbre.')
-        st.download_button('Descargar pronóstico', proy.rename('Pronostico').to_csv().encode('utf-8-sig'), f'{ticker}_pronostico.csv')
+elif pagina == 'Exploración de precios':
+    st.title('Comportamiento de las cotizaciones')
+    frecuencia=st.radio('Frecuencia del gráfico',['Mensual','Diaria'],horizontal=True)
+    base=datos if frecuencia=='Mensual' else pd.concat(diarios,axis=1)
+    empresas=st.multiselect('Series visibles',list(EMPRESAS),default=[ticker])
+    escala=st.radio('Forma de comparación',['Precio ajustado','Índice base 100'],horizontal=True)
+    rango=st.date_input('Intervalo a explorar',value=(base.index.min().date(),base.index.max().date()),min_value=base.index.min().date(),max_value=base.index.max().date())
+    x=base.loc[str(rango[0]):str(rango[1])] if len(rango)==2 else base
+    if not empresas or x.empty:
+        st.info('Selecciona al menos una empresa y un intervalo con datos.');st.stop()
+    x=x[empresas]
+    if escala=='Índice base 100':x=x.div(x.iloc[0]).mul(100)
+    fig=linea({t:x[t] for t in empresas},'Trayectoria de las series','Índice base 100' if escala=='Índice base 100' else 'US$ por acción')
+    if st.checkbox('Escala logarítmica',value=False):fig.update_yaxes(type='log')
+    st.plotly_chart(fig,width='stretch',config={'displaylogo':False,'scrollZoom':True})
+    st.caption('Arrastra para ampliar un tramo, usa el control inferior para desplazarte y pulsa una leyenda para ocultar una serie. Haz doble clic para recuperar la vista.')
+    st.caption('En base 100, un valor de 120 representa un aumento del 20% frente al primer registro del intervalo. Las caídas o saltos aislados requieren revisión; el gráfico no identifica sus causas.')
+    st.subheader('Distribución y valores extremos')
+    vista=st.radio('Gráfico complementario',['Distribución de precios','Cambios mensuales'],horizontal=True)
+    if vista=='Distribución de precios':
+        st.plotly_chart(px.box(datos,points='outliers',labels={'variable':'Empresa','value':'Cierre ajustado (US$)'}),width='stretch')
+        st.caption('Los puntos fuera de los límites del diagrama son candidatos a revisión. En una serie con tendencia, no implican necesariamente errores de registro.')
     else:
-        tipo = st.radio('Descomposición clásica', ['Aditiva', 'Multiplicativa'], horizontal=True)
-        des = seasonal_decompose(s, model=tipo.lower().replace('aditiva','additive').replace('multiplicativa','multiplicative'), period=12)
-        comp = pd.DataFrame({'Observado': s, 'Tendencia': des.trend, 'Estacionalidad': des.seasonal, 'Residuo': des.resid})
-        c = st.selectbox('Componente', list(comp))
-        st.plotly_chart(linea({c: comp[c]}, f'{tipo}: {c}', 'Factor sin unidad' if tipo=='Multiplicativa' and c in ['Estacionalidad','Residuo'] else 'US$ por acción'), width='stretch')
-        st.latex(r'Y_t=T_t+E_t+R_t' if tipo=='Aditiva' else r'Y_t=T_t\times E_t\times R_t')
-        st.caption('Periodo estacional de 12 meses. Los extremos de la tendencia quedan vacíos al usar medias centradas. La reconstrucción con el residuo no sirve para medir capacidad predictiva.')
-        st.download_button('Descargar componentes', comp.to_csv().encode('utf-8-sig'), f'{ticker}_componentes.csv')
-        st.subheader('Errores de entrenamiento y validación')
-        st.dataframe(tabla, hide_index=True)
-        st.caption('Entrenamiento: mismos meses para todos los métodos, excluyendo los primeros 24 o la ventana si es mayor. MAE/RMSE en dólares por acción; MAPE en porcentaje. La selección usa RMSE de validación.')
-        st.plotly_chart(linea({'Real': s.tail(12), **pruebas}, 'Validación: precios observados y pronósticos'), width='stretch')
-        st.plotly_chart(linea({'Real': s.iloc[:-12].tail(60), **{k:v.tail(60) for k,v in ajustes.items()}}, 'Ajustes en entrenamiento'), width='stretch')
-        st.caption('PMS y ponderado usan únicamente meses anteriores. Los pesos ponderados crecen de 1 a la ventana. Holt-Winters usa tendencia aditiva y estacionalidad aditiva o multiplicativa.')
-        st.download_button('Descargar errores', tabla.to_csv(index=False).encode('utf-8-sig'), f'{ticker}_errores.csv')
-    if fallos:
-        with st.expander('Métodos que no pudieron estimarse'):
-            st.json(fallos)
+        cambios=datos.pct_change(fill_method=None).mul(100).dropna()
+        st.plotly_chart(linea({t:cambios[t] for t in empresas},'Variaciones entre meses consecutivos','Cambio (%)'),width='stretch')
+    st.dataframe(datos[empresas].describe().T, width='stretch')
 
-elif pagina == '⚖️ Riesgos y simulador':
-    st.title('⚖️ Fluctuaciones y escenarios de inversión')
-    vol = datos.tail(61).pct_change(fill_method=None).std()*100
-    st.plotly_chart(px.bar(x=vol.index, y=vol.values, labels={'x':'Empresa','y':'Desviación de cambios mensuales (%)'}, title='Fluctuaciones durante los últimos cinco años'), width='stretch')
-    capital = st.number_input('Capital hipotético (US$)', min_value=1.0, value=1000.0)
-    tasa = st.slider('Cambio hipotético (%)', -80, 100, 5)
-    st.metric('Valor bajo el escenario', f'US$ {capital*(1+tasa/100):,.2f}', f'US$ {capital*tasa/100:+,.2f}')
-    st.caption('Simulación proporcional del capital, sin comisiones ni impuestos. El cierre ajustado es una serie histórica corregida; no representa un precio ejecutable de compra.')
-    cambios = s.pct_change(fill_method=None).mul(100).dropna()
-    meses = cambios.groupby(cambios.index.month).agg(['mean','median','count'])
-    meses.index = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-    st.subheader('Cambios históricos por mes del año')
-    st.plotly_chart(px.bar(meses, x=meses.index, y='mean', labels={'mean':'Cambio medio (%)','x':'Mes'}), width='stretch')
-    st.caption('Promedios históricos del periodo común. Un patrón mensual no determina una fecha segura de compra.')
+elif pagina == 'Descomposición temporal':
+    st.title(f'Componentes de la serie de {ticker}')
+    tipo=st.radio('Estructura',['Aditiva','Multiplicativa'],horizontal=True)
+    des=seasonal_decompose(s,model='additive' if tipo=='Aditiva' else 'multiplicative',period=12)
+    componentes=pd.DataFrame({'Observado':s,'Tendencia':des.trend,'Estacionalidad':des.seasonal,'Residuo':des.resid})
+    from plotly.subplots import make_subplots
+    fig=make_subplots(rows=4,cols=1,shared_xaxes=True,subplot_titles=list(componentes),vertical_spacing=.07)
+    for i,c in enumerate(componentes,1):
+        fig.add_trace(go.Scatter(x=s.index,y=componentes[c],name=c,mode='lines'),row=i,col=1)
+    fig.update_layout(height=850,template='plotly_dark',showlegend=False,hovermode='x unified')
+    st.plotly_chart(fig,width='stretch',config={'displaylogo':False,'scrollZoom':True})
+    st.latex(r'Y_t=T_t+E_t+R_t' if tipo=='Aditiva' else r'Y_t=T_t\times E_t\times R_t')
+    st.caption('Se usa un ciclo de 12 meses. La tendencia resume cambios prolongados; la estacionalidad estima un patrón anual; el residuo recoge lo restante. Los extremos de la tendencia quedan sin estimar por el promedio centrado.')
+    st.info('En la estructura aditiva, los componentes se expresan en dólares por acción. En la multiplicativa, estacionalidad y residuo son factores: 1 indica ausencia de efecto. La descomposición no demuestra por sí sola una estacionalidad estable.')
+    st.download_button('Exportar componentes',componentes.to_csv().encode('utf-8-sig'),f'{ticker}_descomposicion.csv')
 
 else:
-    st.title('🎯 Comparar perspectivas de las tres empresas')
-    h = st.select_slider('Horizonte (meses)', [3,6,12], value=6)
-    filas = []
-    with st.spinner('Evaluando las tres empresas...'):
-        for t in EMPRESAS:
-            x = datos[t]
-            tabla, _, _, _ = evaluar(x, ventana)
-            val = tabla[tabla['Fase']=='Validación (12 meses)'].sort_values('RMSE') if not tabla.empty else pd.DataFrame()
-            if val.empty: continue
-            m = val.iloc[0]['Modelo']
+    st.title(f'Ajuste de métodos para {ticker}')
+    ventana=st.slider('Ventana de promedios móviles (meses)',3,24,12)
+    st.caption('Se utilizan todos los meses como entrenamiento. Los errores se comparan en los mismos registros, excluyendo los primeros 24 meses para reducir el efecto de inicialización.')
+    ajustes={};filas=[];fallos={};comienzo=max(24,ventana)
+    with st.spinner('Estimando métodos...'):
+        for m in METODOS:
             try:
-                pred = futuro(x, m, h, ventana)
-                filas.append({'Empresa': t, 'Modelo': m, 'Cambio proyectado (%)': (pred[-1]/x.iloc[-1]-1)*100, 'MAPE validación (%)': val.iloc[0]['MAPE (%)'], 'Fluctuación mensual (%)': x.tail(61).pct_change(fill_method=None).std()*100})
-            except Exception as exc:
-                st.info(f'{t}: {exc}')
-    resumen = pd.DataFrame(filas)
-    if not resumen.empty:
-        st.plotly_chart(px.bar(resumen, x='Empresa', y='Cambio proyectado (%)', title=f'Escenario a {h} meses'), width='stretch')
-        st.dataframe(resumen, hide_index=True)
-        st.download_button('Descargar comparación', resumen.to_csv(index=False).encode('utf-8-sig'), 'comparacion_acciones.csv')
-    st.caption('La empresa con mayor cambio proyectado merece revisión; esa posición no equivale a una recomendación automática de compra. El error mostrado evalúa un horizonte de 12 meses, que puede diferir del horizonte seleccionado.')
+                f,fit=ajustar(s,m,ventana)
+                ajustes[m]=f
+                filas.append({'Método':m,**errores(s.iloc[comienzo:],f.iloc[comienzo:]),'Meses evaluados':len(s)-comienzo})
+            except Exception as exc:fallos[m]=str(exc)
+    if not filas:st.error('No se pudieron calcular los métodos.');st.stop()
+    tabla=pd.DataFrame(filas).sort_values('RMSE')
+    visibles=st.multiselect('Métodos visibles',list(ajustes),default=[tabla.iloc[0]['Método']])
+    st.plotly_chart(linea({'Observado':s,**{m:ajustes[m] for m in visibles}},'Valores observados y ajustes'),width='stretch',config={'displaylogo':False,'scrollZoom':True})
+    st.dataframe(tabla,hide_index=True,width='stretch')
+    ganador=tabla.iloc[0]
+    st.info(f'{ganador["Método"]} presenta el menor RMSE de entrenamiento: US$ {ganador["RMSE"]:,.2f} por acción. Este resultado describe el ajuste al historial; no evalúa precisión futura.')
+    st.caption('MAE: error absoluto medio. RMSE: penaliza más los errores grandes. Ambos están en dólares por acción. MAPE: error absoluto porcentual medio. Menores valores indican mejor ajuste en los registros evaluados.')
+    with st.expander('Cómo se calculan los métodos'):
+        st.write('El promedio móvil simple asigna el mismo peso a los meses anteriores. El ponderado asigna pesos de 1 a la ventana, dando más importancia al mes más reciente. Ambos se desplazan un mes para evitar usar el precio que se intenta estimar. SES estima nivel; Holt incorpora tendencia; Holt-Winters incorpora tendencia y estacionalidad de 12 meses, aditiva o multiplicativa. Los parámetros exponenciales se optimizan por suma de errores cuadrados.')
+    if fallos:st.warning('Métodos sin estimación: '+str(fallos))
+    st.download_button('Exportar errores de entrenamiento',tabla.to_csv(index=False).encode('utf-8-sig'),f'{ticker}_errores_entrenamiento.csv')
 
 st.divider()
+st.caption('Primer entregable | Fuente: Yahoo Finance | Variable: cierre ajustado | Datos históricos hasta septiembre de 2026')
