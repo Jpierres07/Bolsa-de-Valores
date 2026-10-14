@@ -102,7 +102,6 @@ if pagina == 'Exploración de precios':
     if escala=='Índice base 100':x=x.div(x.iloc[0]).mul(100)
     fig=linea({t:x[t] for t in empresas},'Trayectoria de las series','Índice base 100' if escala=='Índice base 100' else 'US$ por acción')
     st.plotly_chart(fig,width='stretch',config={'displaylogo':False,'scrollZoom':True})
-    st.caption('Arrastra para ampliar un tramo, usa el control inferior para desplazarte y pulsa una leyenda para ocultar una serie. Haz doble clic para recuperar la vista.')
     st.caption('En base 100, un valor de 120 representa un aumento del 20% frente al primer registro del intervalo. Las caídas o saltos aislados requieren revisión; el gráfico no identifica sus causas.')
     st.subheader('Distribución y valores extremos')
     vista=st.radio('Gráfico complementario',['Distribución de precios','Cambios mensuales'],horizontal=True)
