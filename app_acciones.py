@@ -57,7 +57,7 @@ if pagina=='1. Presentación de la investigación':
     st.subheader('Objetivos específicos')
     st.markdown('''1. Describir la evolución histórica de los precios de cierre ajustado y sus variaciones.
 2. Examinar la tendencia, estacionalidad y residuos mediante descomposición aditiva y multiplicativa.
-3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, HW_aditivo y HW_multiplicativo.
+3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, Holt Winters aditivo y Holt Winters multiplicativo.
 4. Comparar los modelos mediante MAE, RMSE y MAPE en entrenamiento y en una prueba temporal.
 5. Proyectar precios y analizar escenarios pesimista, central y favorable, considerando el riesgo de cada acción.''')
     st.subheader('Justificación')
