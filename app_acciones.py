@@ -109,8 +109,6 @@ elif pagina=='3. Exploración histórica':
     st.subheader('Rendimientos mensuales')
     r=pd.concat(series,axis=1).pct_change(fill_method=None).mul(100).dropna()
     st.plotly_chart(grafico({c:r[c] for c in seleccion},'Cambios mensuales (%)','%'),use_container_width=True)
-    st.plotly_chart(px.box(r[seleccion],points='outliers',title='Posibles valores extremos de rendimientos'),use_container_width=True)
-    st.caption('Los movimientos extremos reales no deben eliminarse automáticamente.')
 elif pagina=='4. Descomposición':
     st.title(f'Descomposición clásica · {ticker}')
     st.write('**¿Qué veremos?** Separamos la serie en tendencia, estacionalidad y variación no explicada. No toda fluctuación implica una estacionalidad repetible.')
