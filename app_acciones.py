@@ -76,7 +76,7 @@ elif pagina=='2. Ficha técnica de datos':
     st.markdown('''| Elemento | Descripción |
 |---|---|
 | Tema | Precios bursátiles de Southern Copper y Buenaventura |
-| Fuente | Yahoo Finance |
+| Fuente | Yahoo Finance https://es.finance.yahoo.com/quote/BVN/history/ |
 | Unidad de análisis | Una acción por empresa en cada periodo |
 | Variable principal | `Adj Close` (precio de cierre ajustado) |
 | Unidad de medida | Dólares estadounidenses por acción (US$) |
