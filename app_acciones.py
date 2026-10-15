@@ -21,7 +21,7 @@ def cargar():
     return series,diarios
 series,diarios=cargar();s=series['SCCO']
 st.sidebar.title('Bolsa de Valores e Inversión')
-pagina=st.sidebar.radio('Módulo',['Exploración histórica','Descomposición','Modelos y entrenamiento','Validación temporal','Pronósticos y escenarios','Comparación de inversión','Datos de metales'])
+pagina=st.sidebar.radio('Módulo',['Exploración histórica','Descomposición','Modelos y entrenamiento','Validación temporal','Pronósticos y escenarios','Comparación de inversión'])
 ticker=st.sidebar.selectbox('Acción',list(EMPRESAS),format_func=lambda x:f'{x} · {EMPRESAS[x]}')
 s=series[ticker]
 st.sidebar.caption(f'{len(s)} meses | {s.index[0]:%m/%Y} – {s.index[-1]:%m/%Y}')
@@ -105,14 +105,4 @@ elif pagina=='Comparación de inversión':
     st.plotly_chart(px.bar(tabla,x='Acción',y=['Rent. pesimista %','Rent. central %','Rent. favorable %'],barmode='group',title='Escenarios de rentabilidad potencial (%)'),use_container_width=True)
     st.warning('No se recomienda comprar únicamente por el rendimiento central proyectado. Comparar riesgo, incertidumbre, costos, liquidez y horizonte.')
     st.download_button('Descargar comparación',tabla.to_csv(index=False).encode('utf-8-sig'),'comparacion_inversion.csv')
-else:
-    st.title('Metales internacionales y acciones mineras')
-    d=pd.read_csv(BASE/'datos'/'metales_y_acciones.csv',parse_dates=['Fecha']).set_index('Fecha')
-    st.caption('Banco Mundial (Pink Sheet): cobre, oro y plata. Variables complementarias de contexto, no regresores de SES/Holt/Holt-Winters.')
-    metal=st.selectbox('Metal',['Copper','Gold','Silver'])
-    st.plotly_chart(grafico({metal:d[metal]},'Precio internacional de '+metal,'Precio del metal (unidad de origen)'),use_container_width=True)
-    st.subheader('Correlación descriptiva de variaciones mensuales')
-    retornos=d[[f'{t}_AdjClose' for t in EMPRESAS]+['Copper','Gold','Silver']].pct_change(fill_method=None).dropna()
-    st.dataframe(retornos.corr().round(3),use_container_width=True)
-    st.caption('Correlación contemporánea no implica causalidad ni capacidad predictiva.')
-st.divider();st.caption('Fuente bursátil: Yahoo Finance, archivos del grupo | Metales: Banco Mundial Pink Sheet | Datos hasta septiembre de 2026')
+st.divider();st.caption('Fuente bursátil: Yahoo Finance, archivos del grupo | Datos hasta septiembre de 2026')
