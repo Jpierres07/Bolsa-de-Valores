@@ -183,4 +183,4 @@ elif pagina=='6. Inversión y conclusiones':
 
 **Límites:** los escenarios son exploratorios, no garantizan rendimientos y no incluyen costos, impuestos ni tipo de cambio.''')
     st.info('Mensaje final: una inversión responsable compara rentabilidad potencial y riesgo; ninguna proyección asegura ganancias.')
-st.divider();st.caption('Fuente bursátil: Yahoo Finance, archivos del grupo | Datos hasta septiembre de 2026')
+st.divider();st.caption('Fuente: Yahoo Finance | Datos hasta septiembre de 2026')
