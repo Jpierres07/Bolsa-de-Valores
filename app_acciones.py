@@ -21,8 +21,8 @@ def cargar():
     return series,diarios
 series,diarios=cargar();s=series['SCCO']
 st.sidebar.title('📈 Bolsa de Valores')
-st.sidebar.caption('Guía de exposición · SCCO y BVN')
-pagina=st.sidebar.radio('Selecciona una sección',[
+st.sidebar.caption('Guía')
+pagina=st.sidebar.radio('Secciones',[
     '1. Presentación del estudio',
     '2. Ficha técnica de datos',
     '3. Exploración histórica',
