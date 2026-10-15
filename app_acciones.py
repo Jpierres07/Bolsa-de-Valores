@@ -116,7 +116,59 @@ elif pagina=='2. Exploración histórica':
         ),
         use_container_width=True
     )
+     st.subheader('Variación del precio a 1 y 5 años')
+    st.caption(
+        'Comparamos el último cierre ajustado mensual disponible '
+        'con el mismo mes de hace 1 y 5 años. '
+        'La variación de 5 años es acumulada.'
+    )
 
+    for empresa in seleccion:
+        mensual = series[empresa].dropna().sort_index().copy()
+        mensual.index = mensual.index.to_period('M')
+        mensual = mensual.groupby(level=0).last()
+
+        ultimo_mes = mensual.index.max()
+        precio_actual = float(mensual.loc[ultimo_mes])
+
+        st.markdown(f'**{EMPRESAS[empresa]} ({empresa})**')
+
+        columnas = st.columns(3)
+        columnas[0].metric(
+            f'Cierre ajustado · {ultimo_mes.month:02d}/{ultimo_mes.year}',
+            f'US$ {precio_actual:,.2f}'
+        )
+
+        for columna, anios in zip(columnas[1:], [1, 5]):
+            mes_anterior = ultimo_mes - 12 * anios
+
+            if mes_anterior not in mensual.index:
+                columna.metric(
+                    f'Variación a {anios} año(s)',
+                    'Sin datos'
+                )
+                continue
+
+            precio_anterior = float(mensual.loc[mes_anterior])
+
+            if precio_anterior <= 0:
+                columna.metric(
+                    f'Variación a {anios} año(s)',
+                    'No calculable'
+                )
+                continue
+
+            cambio = (precio_actual / precio_anterior - 1) * 100
+
+            columna.metric(
+                f'Variación a {anios} año(s)',
+                f'{cambio:+.2f}%'
+            )
+            columna.caption(
+                f'Desde {mes_anterior.month:02d}/{mes_anterior.year} '
+                f'(US$ {precio_anterior:,.2f}) '
+                f'hasta {ultimo_mes.month:02d}/{ultimo_mes.year}.'
+            )
     st.subheader('Rendimientos mensuales')
     r=pd.concat(series,axis=1).pct_change(fill_method=None).mul(100).dropna()
 
