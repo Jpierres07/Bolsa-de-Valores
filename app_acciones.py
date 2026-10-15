@@ -76,7 +76,7 @@ elif pagina=='2. Ficha técnica de datos':
     st.markdown('''| Elemento | Descripción |
 |---|---|
 | Tema | Precios bursátiles de Southern Copper y Buenaventura |
-| Fuente | Yahoo Finance; archivos históricos recopilados por el grupo |
+| Fuente | Yahoo Finance |
 | Unidad de análisis | Una acción por empresa en cada periodo |
 | Variable principal | `Adj Close` (precio de cierre ajustado) |
 | Unidad de medida | Dólares estadounidenses por acción (US$) |
@@ -88,12 +88,11 @@ elif pagina=='2. Ficha técnica de datos':
 | Validación | Últimos 12 meses separados para prueba temporal |
 | Horizonte de pronóstico | 3, 6 y 12 meses; análisis principal de 6 meses |''')
     st.subheader('Preparación y control de calidad')
-    st.markdown('''- Se ordenan las fechas y se comprueba que no existan meses faltantes, precios nulos o valores no positivos.
+    st.markdown('''- Se ordenan las fechas y se comprueba que no existan meses faltantes.
 - Se mantiene el **cierre ajustado**, que contempla ajustes históricos del proveedor, en lugar de mezclarlo con el precio de cierre sin ajustar.
 - Los valores extremos se revisan visualmente; no se eliminan automáticamente, porque podrían corresponder a movimientos reales del mercado.
 - La comparación de ajuste utiliza los mismos meses evaluados para los ocho modelos (desde la observación 25).
 - La validación separa los últimos 12 meses sin utilizarlos para estimar el modelo.''')
-    st.info('Importante: los indicadores bursátiles publicados en octubre de 2026 no forman parte de la base de entrenamiento, que termina en septiembre de 2026.')
     st.download_button('Descargar ficha técnica (CSV)',pd.DataFrame(fichas).to_csv(index=False).encode('utf-8-sig'),'ficha_tecnica_SCCO_BVN.csv')
 
 elif pagina=='3. Exploración histórica':
