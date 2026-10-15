@@ -59,13 +59,12 @@ if pagina=='1. Presentación del estudio':
     st.subheader('Objetivos específicos')
     st.markdown('''1. Describir la evolución histórica de los precios de cierre ajustado y sus variaciones.
 2. Examinar la tendencia, estacionalidad y residuos mediante descomposición aditiva y multiplicativa.
-3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, HW_aditivo y HW_multiplicativo.
+3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, Holt Winters aditivo y Holt Winters multiplicativo.
 4. Comparar los modelos mediante MAE, RMSE y MAPE en entrenamiento y en una prueba temporal.
 5. Proyectar precios y analizar escenarios pesimista, central y favorable, considerando el riesgo de cada acción.''')
     st.subheader('Justificación')
     st.write('El estudio aplica métodos del curso a datos bursátiles reales y facilita explicar a un público no especializado cómo se comportan los precios, qué tan precisos han sido los modelos y por qué una proyección no garantiza una ganancia.')
-    st.success('Mensaje central: buscamos comparar oportunidades y riesgos, no prometer rendimientos.')
-
+    
 elif pagina=='2. Ficha técnica de datos':
     st.title('Ficha técnica de los datos')
     st.write('La investigación usa **precios de cierre ajustado mensuales** como variable principal. Los datos diarios se muestran solo como complemento exploratorio.')
@@ -176,4 +175,4 @@ elif pagina=='8. Comparación de inversión':
     st.plotly_chart(px.bar(tabla,x='Acción',y=['Rent. pesimista %','Rent. central %','Rent. favorable %'],barmode='group',title='Escenarios de rentabilidad potencial (%)'),use_container_width=True)
     st.warning('No se recomienda comprar únicamente por el rendimiento central proyectado. Comparar riesgo, incertidumbre, costos, liquidez y horizonte.')
     st.download_button('Descargar comparación',tabla.to_csv(index=False).encode('utf-8-sig'),'comparacion_inversion.csv')
-st.divider();st.caption('Fuente bursátil: Yahoo Finance, archivos del grupo | Datos hasta septiembre de 2026')
+st.divider();st.caption('Fuente : Yahoo Finance | Datos hasta septiembre de 2026')
