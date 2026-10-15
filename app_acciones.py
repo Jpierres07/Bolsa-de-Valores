@@ -21,8 +21,8 @@ def cargar():
     return series,diarios
 series,diarios=cargar();s=series['SCCO']
 st.sidebar.title('📈 Bolsa de Valores')
-st.sidebar.caption('Guía de exposición · SCCO y BVN')
-pagina=st.sidebar.radio('Selecciona una sección',[
+st.sidebar.caption('Guía')
+pagina=st.sidebar.radio('Secciones',[
     '1. Presentación de la investigación',
     '2. Exploración histórica',
     '3. Descomposición clásica',
@@ -33,7 +33,6 @@ pagina=st.sidebar.radio('Selecciona una sección',[
 ticker=st.sidebar.selectbox('Acción',list(EMPRESAS),format_func=lambda x:f'{x} · {EMPRESAS[x]}')
 s=series[ticker]
 st.sidebar.caption(f'Datos mensuales: {s.index[0]:%m/%Y} – {s.index[-1]:%m/%Y}')
-st.sidebar.info('Ruta de exposición: 6 secciones, una por integrante.')
 def grafico(datos,titulo,ylabel='US$ por acción'):
     fig=go.Figure()
     for nom,ser in datos.items():fig.add_trace(go.Scatter(x=ser.index,y=ser.values,name=nom,mode='lines'))
