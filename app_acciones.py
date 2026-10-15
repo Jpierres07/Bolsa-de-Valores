@@ -100,8 +100,6 @@ elif pagina=='2. Exploración histórica':
     if not seleccion:st.stop()
     forma=st.radio('Comparación',['Precio ajustado','Índice base 100'],horizontal=True)
     x=x[seleccion]
-    if forma=='Índice base 100':x=x.div(x.iloc[0]).mul(100)
-    st.plotly_chart(grafico({c:x[c] for c in seleccion},'Evolución histórica',forma),use_container_width=True)
     st.subheader('Rendimientos mensuales')
     r=pd.concat(series,axis=1).pct_change(fill_method=None).mul(100).dropna()
     st.plotly_chart(grafico({c:r[c] for c in seleccion},'Cambios mensuales (%)','%'),use_container_width=True)
