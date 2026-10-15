@@ -94,27 +94,80 @@ if pagina=='1. Presentación de la investigación':
 elif pagina=='2. Exploración histórica':
     st.title('Exploración histórica de las acciones')
     st.write('**¿Qué veremos?** Cómo han cambiado los precios y qué tan grandes fueron sus variaciones. Utiliza la vista mensual para explicar tendencias y la diaria solo para movimientos recientes.')
+
     freq=st.radio('Frecuencia',['Mensual','Diaria'],horizontal=True)
     x=pd.concat(series if freq=='Mensual' else diarios,axis=1).dropna()
-    seleccion=st.multiselect('Empresas',list(EMPRESAS),default=list(EMPRESAS))
-    if not seleccion:st.stop()
-    forma=st.radio('Comparación',['Precio ajustado','Índice base 100'],horizontal=True)
+
+    seleccion=st.multiselect(
+        'Empresas',
+        list(EMPRESAS),
+        default=list(EMPRESAS)
+    )
+    if not seleccion:
+        st.stop()
+
     x=x[seleccion]
-    if forma=='Índice base 100':x=x.div(x.iloc[0]).mul(100)
-    st.plotly_chart(grafico({c:x[c] for c in seleccion},'Evolución histórica',forma),use_container_width=True)
+
+    st.plotly_chart(
+        grafico(
+            {c:x[c] for c in seleccion},
+            'Evolución histórica',
+            'Precio ajustado (US$ por acción)'
+        ),
+        use_container_width=True
+    )
+
     st.subheader('Rendimientos mensuales')
     r=pd.concat(series,axis=1).pct_change(fill_method=None).mul(100).dropna()
-    st.plotly_chart(grafico({c:r[c] for c in seleccion},'Cambios mensuales (%)','%'),use_container_width=True)
+
+    st.plotly_chart(
+        grafico(
+            {c:r[c] for c in seleccion},
+            'Cambios mensuales (%)',
+            '%'
+        ),
+        use_container_width=True
+    )
+
     st.subheader('Acontecimientos históricos relevantes')
     st.caption('Contexto económico orientativo; la coincidencia temporal no demuestra causalidad.')
-    st.dataframe(pd.DataFrame([
-        {'Periodo':'2003–2007','Acontecimiento':'Expansión de la demanda china de metales','Relación':'Contexto favorable para el cobre y SCCO'},
-        {'Periodo':'2008–2009','Acontecimiento':'Crisis financiera mundial','Relación':'Caídas bursátiles y posterior recuperación'},
-        {'Periodo':'2010–2011','Acontecimiento':'Auge del oro y la plata','Relación':'Contexto favorable para BVN'},
-        {'Periodo':'2013–2015','Acontecimiento':'Debilidad de los precios de los metales','Relación':'Presión sobre cotizaciones mineras'},
-        {'Periodo':'2020–2021','Acontecimiento':'Pandemia y recuperación económica','Relación':'Alta volatilidad y recuperación del cobre'},
-        {'Periodo':'2025–2026','Acontecimiento':'Precios altos de metales y resultados empresariales','Relación':'Coincide con repuntes recientes de SCCO y BVN'},
-    ]),hide_index=True,use_container_width=True)
+
+    st.dataframe(
+        pd.DataFrame([
+            {
+                'Periodo':'2003–2007',
+                'Acontecimiento':'Expansión de la demanda china de metales',
+                'Relación':'Contexto favorable para el cobre y SCCO'
+            },
+            {
+                'Periodo':'2008–2009',
+                'Acontecimiento':'Crisis financiera mundial',
+                'Relación':'Caídas bursátiles y posterior recuperación'
+            },
+            {
+                'Periodo':'2010–2011',
+                'Acontecimiento':'Auge del oro y la plata',
+                'Relación':'Contexto favorable para BVN'
+            },
+            {
+                'Periodo':'2013–2015',
+                'Acontecimiento':'Debilidad de los precios de los metales',
+                'Relación':'Presión sobre cotizaciones mineras'
+            },
+            {
+                'Periodo':'2020–2021',
+                'Acontecimiento':'Pandemia y recuperación económica',
+                'Relación':'Alta volatilidad y recuperación del cobre'
+            },
+            {
+                'Periodo':'2025–2026',
+                'Acontecimiento':'Precios altos de metales y resultados empresariales',
+                'Relación':'Coincide con repuntes recientes de SCCO y BVN'
+            },
+        ]),
+        hide_index=True,
+        use_container_width=True
+    )
 elif pagina=='3. Descomposición clásica':
     st.title(f'Descomposición clásica · {ticker}')
     st.write('**¿Qué veremos?** Separamos la serie en tendencia, estacionalidad y variación no explicada. No toda fluctuación implica una estacionalidad repetible.')
