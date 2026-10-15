@@ -61,8 +61,7 @@ if pagina=='1. Presentación de la investigación':
 4. Comparar los modelos mediante MAE, RMSE y MAPE en entrenamiento y en una prueba temporal.
 5. Proyectar precios y analizar escenarios pesimista, central y favorable, considerando el riesgo de cada acción.''')
     st.subheader('Justificación')
-    st.write('El estudio aplica métodos del curso a datos bursátiles reales y facilita explicar a un público no especializado cómo se comportan los precios, qué tan precisos han sido los modelos y por qué una proyección no garantiza una ganancia.')
-    st.success('Mensaje central: buscamos comparar oportunidades y riesgos, no prometer rendimientos.')
+    st.write('El estudio aplica métodos del curso a datos bursátiles reales y facilita explicar cómo se comportan los precios, qué tan precisos han sido los modelos y por qué una proyección no garantiza una ganancia.')
     st.divider()
     st.title('Ficha técnica de los datos')
     st.write('La investigación usa **precios de cierre ajustado mensuales** como variable principal. Los datos diarios se muestran solo como complemento exploratorio.')
