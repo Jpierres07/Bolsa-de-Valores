@@ -181,5 +181,4 @@ elif pagina=='6. Inversión y conclusiones':
     st.markdown('''**Lectura de los resultados:** la mejor alternativa de ajuste histórico no necesariamente es la de mejor validación temporal. Las decisiones deben contrastar pronósticos, escenarios y volatilidad.
 
 **Límites:** los escenarios son exploratorios, no garantizan rendimientos y no incluyen costos, impuestos ni tipo de cambio.''')
-    st.info('Mensaje final: una inversión responsable compara rentabilidad potencial y riesgo; ninguna proyección asegura ganancias.')
 st.divider();st.caption('Fuente: Yahoo Finance | Datos hasta septiembre de 2026')
