@@ -116,7 +116,7 @@ elif pagina=='2. Exploración histórica':
         ),
         use_container_width=True
     )
-        st.subheader('Variación del precio a 1 y 5 años')
+    st.subheader('Variación del precio a 1 y 5 años')
     st.caption(
         'Comparamos el último cierre ajustado mensual disponible '
         'con el mismo mes de hace 1 y 5 años. '
