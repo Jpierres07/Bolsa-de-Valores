@@ -21,20 +21,19 @@ def cargar():
     return series,diarios
 series,diarios=cargar();s=series['SCCO']
 st.sidebar.title('📈 Bolsa de Valores')
-st.sidebar.caption('Guía')
-pagina=st.sidebar.radio('Secciones',[
-    '1. Presentación del estudio',
-    '2. Ficha técnica de datos',
-    '3. Exploración histórica',
-    '4. Descomposición',
-    '5. Modelos y entrenamiento',
-    '6. Validación temporal',
-    '7. Pronósticos y escenarios',
-    '8. Comparación de inversión',
+st.sidebar.caption('Guía de exposición · SCCO y BVN')
+pagina=st.sidebar.radio('Selecciona una sección',[
+    '1. Presentación de la investigación',
+    '2. Exploración histórica',
+    '3. Descomposición clásica',
+    '4. Comparación de ocho modelos',
+    '5. Validación y pronósticos',
+    '6. Inversión y conclusiones',
 ])
 ticker=st.sidebar.selectbox('Acción',list(EMPRESAS),format_func=lambda x:f'{x} · {EMPRESAS[x]}')
 s=series[ticker]
 st.sidebar.caption(f'Datos mensuales: {s.index[0]:%m/%Y} – {s.index[-1]:%m/%Y}')
+st.sidebar.info('Ruta de exposición: 6 secciones, una por integrante.')
 def grafico(datos,titulo,ylabel='US$ por acción'):
     fig=go.Figure()
     for nom,ser in datos.items():fig.add_trace(go.Scatter(x=ser.index,y=ser.values,name=nom,mode='lines'))
@@ -42,7 +41,7 @@ def grafico(datos,titulo,ylabel='US$ por acción'):
     return fig
 @st.cache_data(show_spinner=False)
 def calculos(t):return entrenamiento(series[t]),validacion(series[t])
-if pagina=='1. Presentación del estudio':
+if pagina=='1. Presentación de la investigación':
     st.title('Bolsa de Valores y Oportunidades de Inversión')
     st.subheader('Análisis de series temporales y pronóstico de las acciones de Southern Copper y Buenaventura')
     st.caption('Estudio académico · Datos mensuales de julio de 1996 a septiembre de 2026 · Pronósticos desde octubre de 2026')
@@ -59,13 +58,13 @@ if pagina=='1. Presentación del estudio':
     st.subheader('Objetivos específicos')
     st.markdown('''1. Describir la evolución histórica de los precios de cierre ajustado y sus variaciones.
 2. Examinar la tendencia, estacionalidad y residuos mediante descomposición aditiva y multiplicativa.
-3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, Holt Winters aditivo y Holt Winters multiplicativo.
+3. Aplicar PMS3, PMS6, PMS12, PMP3, SES, Holt, HW_aditivo y HW_multiplicativo.
 4. Comparar los modelos mediante MAE, RMSE y MAPE en entrenamiento y en una prueba temporal.
 5. Proyectar precios y analizar escenarios pesimista, central y favorable, considerando el riesgo de cada acción.''')
     st.subheader('Justificación')
     st.write('El estudio aplica métodos del curso a datos bursátiles reales y facilita explicar a un público no especializado cómo se comportan los precios, qué tan precisos han sido los modelos y por qué una proyección no garantiza una ganancia.')
-    
-elif pagina=='2. Ficha técnica de datos':
+    st.success('Mensaje central: buscamos comparar oportunidades y riesgos, no prometer rendimientos.')
+    st.divider()
     st.title('Ficha técnica de los datos')
     st.write('La investigación usa **precios de cierre ajustado mensuales** como variable principal. Los datos diarios se muestran solo como complemento exploratorio.')
     fichas=[]
@@ -76,7 +75,7 @@ elif pagina=='2. Ficha técnica de datos':
     st.markdown('''| Elemento | Descripción |
 |---|---|
 | Tema | Precios bursátiles de Southern Copper y Buenaventura |
-| Fuente | Yahoo Finance https://es.finance.yahoo.com/quote/SCCO/history/ y https://es.finance.yahoo.com/quote/BVN/history/ |
+| Fuente | Yahoo Finance; archivos históricos recopilados por el grupo |
 | Unidad de análisis | Una acción por empresa en cada periodo |
 | Variable principal | `Adj Close` (precio de cierre ajustado) |
 | Unidad de medida | Dólares estadounidenses por acción (US$) |
@@ -88,14 +87,14 @@ elif pagina=='2. Ficha técnica de datos':
 | Validación | Últimos 12 meses separados para prueba temporal |
 | Horizonte de pronóstico | 3, 6 y 12 meses; análisis principal de 6 meses |''')
     st.subheader('Preparación y control de calidad')
-    st.markdown('''- Se ordenan las fechas y se comprueba que no existan meses faltantes.
+    st.markdown('''- Se ordenan las fechas y se comprueba que no existan meses faltantes, precios nulos o valores no positivos.
 - Se mantiene el **cierre ajustado**, que contempla ajustes históricos del proveedor, en lugar de mezclarlo con el precio de cierre sin ajustar.
 - Los valores extremos se revisan visualmente; no se eliminan automáticamente, porque podrían corresponder a movimientos reales del mercado.
 - La comparación de ajuste utiliza los mismos meses evaluados para los ocho modelos (desde la observación 25).
 - La validación separa los últimos 12 meses sin utilizarlos para estimar el modelo.''')
+    st.info('Importante: los indicadores bursátiles publicados en octubre de 2026 no forman parte de la base de entrenamiento, que termina en septiembre de 2026.')
     st.download_button('Descargar ficha técnica (CSV)',pd.DataFrame(fichas).to_csv(index=False).encode('utf-8-sig'),'ficha_tecnica_SCCO_BVN.csv')
-
-elif pagina=='3. Exploración histórica':
+elif pagina=='2. Exploración histórica':
     st.title('Exploración histórica de las acciones')
     st.write('**¿Qué veremos?** Cómo han cambiado los precios y qué tan grandes fueron sus variaciones. Utiliza la vista mensual para explicar tendencias y la diaria solo para movimientos recientes.')
     freq=st.radio('Frecuencia',['Mensual','Diaria'],horizontal=True)
@@ -109,7 +108,19 @@ elif pagina=='3. Exploración histórica':
     st.subheader('Rendimientos mensuales')
     r=pd.concat(series,axis=1).pct_change(fill_method=None).mul(100).dropna()
     st.plotly_chart(grafico({c:r[c] for c in seleccion},'Cambios mensuales (%)','%'),use_container_width=True)
-elif pagina=='4. Descomposición':
+    st.plotly_chart(px.box(r[seleccion],points='outliers',title='Posibles valores extremos de rendimientos'),use_container_width=True)
+    st.caption('Los movimientos extremos reales no deben eliminarse automáticamente.')
+    st.subheader('Acontecimientos históricos relevantes')
+    st.caption('Contexto económico orientativo; la coincidencia temporal no demuestra causalidad.')
+    st.dataframe(pd.DataFrame([
+        {'Periodo':'2003–2007','Acontecimiento':'Expansión de la demanda china de metales','Relación':'Contexto favorable para el cobre y SCCO'},
+        {'Periodo':'2008–2009','Acontecimiento':'Crisis financiera mundial','Relación':'Caídas bursátiles y posterior recuperación'},
+        {'Periodo':'2010–2011','Acontecimiento':'Auge del oro y la plata','Relación':'Contexto favorable para BVN'},
+        {'Periodo':'2013–2015','Acontecimiento':'Debilidad de los precios de los metales','Relación':'Presión sobre cotizaciones mineras'},
+        {'Periodo':'2020–2021','Acontecimiento':'Pandemia y recuperación económica','Relación':'Alta volatilidad y recuperación del cobre'},
+        {'Periodo':'2025–2026','Acontecimiento':'Precios altos de metales y resultados empresariales','Relación':'Coincide con repuntes recientes de SCCO y BVN'},
+    ]),hide_index=True,use_container_width=True)
+elif pagina=='3. Descomposición clásica':
     st.title(f'Descomposición clásica · {ticker}')
     st.write('**¿Qué veremos?** Separamos la serie en tendencia, estacionalidad y variación no explicada. No toda fluctuación implica una estacionalidad repetible.')
     tipo=st.radio('Modelo',['Aditivo','Multiplicativo'],horizontal=True)
@@ -120,7 +131,7 @@ elif pagina=='4. Descomposición':
     fig.update_layout(height=820,template='plotly_dark')
     st.plotly_chart(fig,use_container_width=True)
     st.caption('Periodicidad 12 meses. Una descomposición no demuestra por sí sola estacionalidad estable.')
-elif pagina=='5. Modelos y entrenamiento':
+elif pagina=='4. Comparación de ocho modelos':
     st.title(f'Ocho modelos · ajuste en entrenamiento · {ticker}')
     st.write('**¿Qué veremos?** Qué método reproduce mejor los precios históricos. Un RMSE menor indica menor error de ajuste, pero no asegura mejores pronósticos.')
     (tabla,ajustes,fallos),_=calculos(ticker)
@@ -131,7 +142,7 @@ elif pagina=='5. Modelos y entrenamiento':
     st.caption('PMP3 utiliza pesos 1, 2 y 3, con mayor peso para el mes más reciente. Los promedios móviles se desplazan un mes. Los modelos exponenciales se optimizan automáticamente.')
     st.download_button('Descargar tabla de entrenamiento',tabla.to_csv(index=False).encode('utf-8-sig'),f'{ticker}_entrenamiento.csv')
     if fallos:st.warning(str(fallos))
-elif pagina=='6. Validación temporal':
+elif pagina=='5. Validación y pronósticos':
     st.title(f'Validación temporal · {ticker}')
     st.write('**¿Qué veremos?** Comparamos pronósticos contra 12 meses que no se usaron al estimar los modelos. Esta es la evaluación más útil para elegir un método predictivo.')
     _,(tabla,preds,fallos)=calculos(ticker)
@@ -141,7 +152,7 @@ elif pagina=='6. Validación temporal':
     st.plotly_chart(grafico({'Observado':s.iloc[-24:],'Pronóstico':preds[elegido]},'Evaluación fuera de muestra'),use_container_width=True)
     st.download_button('Descargar errores de prueba',tabla.to_csv(index=False).encode('utf-8-sig'),f'{ticker}_prueba.csv')
     if fallos:st.warning(str(fallos))
-elif pagina=='7. Pronósticos y escenarios':
+    st.divider()
     st.title(f'Pronósticos y escenarios · {ticker}')
     st.write('**¿Qué veremos?** Una trayectoria central y dos escenarios exploratorios. Los resultados son estimaciones, no precios garantizados.')
     _,(tabla,_,_)=calculos(ticker)
@@ -156,7 +167,7 @@ elif pagina=='7. Pronósticos y escenarios':
     st.metric('Rentabilidad central al horizonte',f'{(e["Central"].iloc[-1]/ultimo-1)*100:+.2f}%')
     st.warning('Las bandas favorable y pesimista son simulaciones exploratorias con remuestreo de residuos y escala √h. NO son intervalos de predicción calibrados ni probabilidades garantizadas. No incluyen comisiones, impuestos, dividendos ni tipo de cambio.')
     st.download_button('Descargar escenarios',resultado.to_csv().encode('utf-8-sig'),f'{ticker}_escenarios.csv')
-elif pagina=='8. Comparación de inversión':
+elif pagina=='6. Inversión y conclusiones':
     st.title('Comparación de rentabilidad, riesgo y escenarios')
     st.write('**¿Qué veremos?** La rentabilidad proyectada y la volatilidad histórica de ambas acciones para debatir una posible decisión de inversión.')
     filas=[]
@@ -172,4 +183,9 @@ elif pagina=='8. Comparación de inversión':
     st.plotly_chart(px.bar(tabla,x='Acción',y=['Rent. pesimista %','Rent. central %','Rent. favorable %'],barmode='group',title='Escenarios de rentabilidad potencial (%)'),use_container_width=True)
     st.warning('No se recomienda comprar únicamente por el rendimiento central proyectado. Comparar riesgo, incertidumbre, costos, liquidez y horizonte.')
     st.download_button('Descargar comparación',tabla.to_csv(index=False).encode('utf-8-sig'),'comparacion_inversion.csv')
-st.divider();st.caption('Fuente : Yahoo Finance | Datos hasta septiembre de 2026')
+    st.subheader('Conclusiones de la investigación')
+    st.markdown('''**Lectura de los resultados:** la mejor alternativa de ajuste histórico no necesariamente es la de mejor validación temporal. Las decisiones deben contrastar pronósticos, escenarios y volatilidad.
+
+**Límites:** los escenarios son exploratorios, no garantizan rendimientos y no incluyen costos, impuestos ni tipo de cambio.''')
+    st.info('Mensaje final: una inversión responsable compara rentabilidad potencial y riesgo; ninguna proyección asegura ganancias.')
+st.divider();st.caption('Fuente bursátil: Yahoo Finance, archivos del grupo | Datos hasta septiembre de 2026')
