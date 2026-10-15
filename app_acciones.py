@@ -160,7 +160,6 @@ elif pagina=='5. Validación y pronósticos':
     st.dataframe(resultado.round(3),use_container_width=True)
     st.metric('Último cierre ajustado',f'US$ {ultimo:,.2f}')
     st.metric('Rentabilidad central al horizonte',f'{(e["Central"].iloc[-1]/ultimo-1)*100:+.2f}%')
-    st.warning('Las bandas favorable y pesimista son simulaciones exploratorias con remuestreo de residuos y escala √h. NO son intervalos de predicción calibrados ni probabilidades garantizadas. No incluyen comisiones, impuestos, dividendos ni tipo de cambio.')
     st.download_button('Descargar escenarios',resultado.to_csv().encode('utf-8-sig'),f'{ticker}_escenarios.csv')
 elif pagina=='6. Inversión y conclusiones':
     st.title('Comparación de rentabilidad, riesgo y escenarios')
